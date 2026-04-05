@@ -26,23 +26,27 @@ class WarRoomUI {
   }
 
   _bindSocketEvents() {
-    this.socket.on('connect', () => { this._setStatus('CONNECTED', '#39ff14'); });
-    this.socket.on('disconnect', () => { this._setStatus('DISCONNECTED', '#ff4d6d'); });
-
+    this.socket.on('connect', () => {
+      console.log('[WAR ROOM UI] Socket.IO connected');
+      this._setStatus('CONNECTED', '#39ff14');
+    });
+    this.socket.on('disconnect', () => {
+      console.log('[WAR ROOM UI] Socket.IO disconnected');
+      this._setStatus('DISCONNECTED', '#ff4d6d');
+    });
     this.socket.on('war-room:session-started', (data) => {
       this.sessionId = data.sessionId;
       this._setStatus('LIVE', '#ff0040');
       this._startSessionTimer();
     });
-
-    this.socket.on('war-room:utterance', (utterance) => { this._appendUtterance(utterance); });
-
+    this.socket.on('war-room:utterance', (utterance) => {
+      this._appendUtterance(utterance);
+    });
     this.socket.on('war-room:intel-update', (intel) => {
       this._updateDecisionsPanel(intel.decisions || []);
       this._updateActionsPanel(intel.actions || []);
       this._updateVibeCheck(intel.sentiment || {});
     });
-
     this.socket.on('war-room:session-end', (data) => {
       this._stopSessionTimer();
       this._setStatus('SESSION ENDED', '#ffd700');
@@ -50,8 +54,9 @@ class WarRoomUI {
         setTimeout(() => { window.location.href = `/post-call?session=${data.sessionId}`; }, 2000);
       }
     });
-
-    this.socket.on('war-room:error', (data) => { console.error('[WAR ROOM UI] Server error:', data.error); });
+    this.socket.on('war-room:error', (data) => {
+      console.error('[WAR ROOM UI] Server error:', data.error);
+    });
   }
 
   _bindButtonEvents() {
@@ -66,6 +71,7 @@ class WarRoomUI {
           this.ingestion = new window.WarRoomIngestion();
           await this.ingestion.start();
           this.socket.emit('war-room:session-start', { title: 'War Room Session' });
+          console.log('[WAR ROOM UI] Session started');
         } catch (err) {
           console.error('[WAR ROOM UI] Failed to start:', err.message);
           startBtn.disabled = false;
@@ -81,6 +87,7 @@ class WarRoomUI {
           if (this.sessionId) { this.socket.emit('war-room:session-end', { sessionId: this.sessionId }); }
           startBtn.disabled = false;
           stopBtn.disabled = true;
+          console.log('[WAR ROOM UI] Session stopped');
         } catch (err) {
           console.error('[WAR ROOM UI] Failed to stop:', err.message);
         }
@@ -98,7 +105,9 @@ class WarRoomUI {
     div.className = 'utterance';
     const color = this.speakerColors[utterance.speakerId] || '#ffffff';
     const time = this._formatTime(utterance.startTime);
+
     div.innerHTML = `<span class="utterance-time">${time}</span><span class="utterance-speaker" style="color:${color};border-color:${color};">${utterance.speakerId}</span><span class="utterance-text">${this._escapeHtml(utterance.text)}</span>`;
+
     panel.appendChild(div);
     panel.scrollTop = panel.scrollHeight;
   }
@@ -107,7 +116,7 @@ class WarRoomUI {
     const panel = document.getElementById('decisions-panel');
     if (!panel) return;
     if (decisions.length === 0) { panel.innerHTML = '<div class="panel-empty">No decisions yet...</div>'; return; }
-    panel.innerHTML = decisions.map((d) => `<div class="decision-item"><div class="decision-text">${this._escapeHtml(d.decision)}</div><div class="decision-meta"><span class="decision-owner">${d.decidedBy || '—'}</span><span class="decision-confidence">${d.confidence != null ? d.confidence + '%' : '—'}</span></div></div>`).join('');
+    panel.innerHTML = decisions.map((d) => `<div class="decision-item"><div class="decision-text">${this._escapeHtml(d.decision)}</div><div class="decision-meta"><span class="decision-owner">${d.decidedBy || ''}</span><span class="decision-confidence">${d.confidence != null ? d.confidence + '%' : ''}</span></div></div>`).join('');
   }
 
   _updateActionsPanel(actions) {
@@ -117,7 +126,7 @@ class WarRoomUI {
     if (openActions.length === 0) { panel.innerHTML = '<div class="panel-empty">No action items yet...</div>'; return; }
     panel.innerHTML = openActions.map((a) => {
       const prioColor = this.priorityColors[a.priority] || '#00d4ff';
-      return `<div class="action-item"><div class="action-priority" style="background:${prioColor};">${a.priority || 'STD'}</div><div class="action-body"><div class="action-task">${this._escapeHtml(a.task)}</div><div class="action-meta"><span class="action-owner">${a.owner || '—'}</span>${a.deadline ? `<span class="action-deadline">⏰ ${a.deadline}</span>` : ''}</div></div></div>`;
+      return `<div class="action-item"><div class="action-priority" style="background:${prioColor};">${a.priority || 'STD'}</div><div class="action-body"><div class="action-task">${this._escapeHtml(a.task)}</div><div class="action-meta"><span class="action-owner">${a.owner || ''}</span>${a.deadline ? `<span class="action-deadline">⏰ ${a.deadline}</span>` : ''}</div></div></div>`;
     }).join('');
   }
 
@@ -130,10 +139,11 @@ class WarRoomUI {
     const moodEmojis = { ALIGNED: '🤝', TENSE: '⚡', DIVERGENT: '🔀', ENERGIZED: '🔥', NEUTRAL: '😐' };
     const emoji = moodEmojis[mood] || '😐';
     const momentumPct = Math.round(momentum * 100);
+
     let html = `<div class="vibe-mood"><span class="vibe-emoji">${emoji}</span><span class="vibe-mood-text">${mood}</span></div><div class="vibe-momentum"><label>Momentum</label><div class="momentum-bar"><div class="momentum-fill" style="width:${momentumPct}%;"></div></div><span class="momentum-value">${momentumPct}%</span></div><div class="vibe-speakers">`;
     for (const [speaker, score] of Object.entries(speakerScores)) {
       const color = this.speakerColors[speaker] || '#fff';
-      const scoreDisplay = typeof score === 'number' ? score.toFixed(2) : '—';
+      const scoreDisplay = typeof score === 'number' ? score.toFixed(2) : '0';
       const barWidth = typeof score === 'number' ? Math.round((score + 1) * 50) : 50;
       html += `<div class="vibe-speaker-row"><span class="vibe-speaker-id" style="color:${color};">${speaker}</span><div class="sentiment-bar"><div class="sentiment-fill" style="width:${barWidth}%;background:${color};"></div></div><span class="sentiment-value">${scoreDisplay}</span></div>`;
     }

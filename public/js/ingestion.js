@@ -58,14 +58,19 @@ class WarRoomIngestion {
         }
         registerProcessor('war-room-processor', WarRoomProcessor);
       `;
+
       const blob = new Blob([workletCode], { type: 'application/javascript' });
       const blobUrl = URL.createObjectURL(blob);
+
       await this.audioContext.audioWorklet.addModule(blobUrl);
       URL.revokeObjectURL(blobUrl);
+
       this.workletNode = new AudioWorkletNode(this.audioContext, 'war-room-processor');
+
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       source.connect(this.workletNode);
       this.workletNode.connect(this.audioContext.destination);
+
       console.log('[INGESTION] AudioWorklet initialized');
     } catch (err) {
       console.error('[INGESTION] Failed to initialize worklet:', err.message);
@@ -79,15 +84,27 @@ class WarRoomIngestion {
       const host = window.location.host;
       this.socket = new WebSocket(`${protocol}//${host}/audio`);
       this.socket.binaryType = 'arraybuffer';
-      this.socket.onopen = () => { console.log('[INGESTION] WebSocket connected'); };
+
+      this.socket.onopen = () => {
+        console.log('[INGESTION] WebSocket connected');
+      };
+
       this.socket.onmessage = (event) => {
         try {
           const utterance = JSON.parse(event.data);
           window.dispatchEvent(new CustomEvent('war-room:ws-utterance', { detail: utterance }));
-        } catch (err) { /* binary or non-JSON */ }
+        } catch (err) {
+          // Binary data or non-JSON
+        }
       };
-      this.socket.onerror = (err) => { console.error('[INGESTION] WebSocket error:', err); };
-      this.socket.onclose = () => { console.log('[INGESTION] WebSocket disconnected'); };
+
+      this.socket.onerror = (err) => {
+        console.error('[INGESTION] WebSocket error:', err);
+      };
+
+      this.socket.onclose = () => {
+        console.log('[INGESTION] WebSocket disconnected');
+      };
     } catch (err) {
       console.error('[INGESTION] Failed to initialize socket:', err.message);
       throw err;
@@ -99,16 +116,21 @@ class WarRoomIngestion {
       console.error('[INGESTION] Worklet or socket not initialized');
       return;
     }
+
     this.workletNode.port.onmessage = (event) => {
       if (this.socket.readyState !== WebSocket.OPEN) return;
+
       const float32Data = event.data;
       const int16Data = new Int16Array(float32Data.length);
+
       for (let i = 0; i < float32Data.length; i++) {
         const sample = float32Data[i];
         int16Data[i] = Math.max(-32768, Math.min(32767, Math.round(sample * 32768)));
       }
+
       this.socket.send(int16Data.buffer);
     };
+
     this.isStreaming = true;
     console.log('[INGESTION] Audio streaming started');
   }
@@ -118,6 +140,7 @@ class WarRoomIngestion {
       await this.initCapture();
       await this.initWorklet();
       this.initSocket();
+
       await new Promise((resolve, reject) => {
         const checkInterval = setInterval(() => {
           if (this.socket.readyState === WebSocket.OPEN) {
@@ -128,8 +151,12 @@ class WarRoomIngestion {
             reject(new Error('WebSocket failed to connect'));
           }
         }, 100);
-        setTimeout(() => { clearInterval(checkInterval); reject(new Error('WebSocket connection timeout')); }, 10000);
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('WebSocket connection timeout'));
+        }, 10000);
       });
+
       this.startStreaming();
       console.log('[INGESTION] War Room audio pipeline active');
     } catch (err) {
@@ -141,10 +168,23 @@ class WarRoomIngestion {
 
   stop() {
     this.isStreaming = false;
-    if (this.workletNode) { try { this.workletNode.disconnect(); this.workletNode.port.onmessage = null; } catch (e) {} this.workletNode = null; }
-    if (this.audioContext && this.audioContext.state !== 'closed') { try { this.audioContext.close(); } catch (e) {} this.audioContext = null; }
-    if (this.mediaStream) { try { this.mediaStream.getTracks().forEach((track) => track.stop()); } catch (e) {} this.mediaStream = null; }
-    if (this.socket) { try { if (this.socket.readyState === WebSocket.OPEN) { this.socket.close(); } } catch (e) {} this.socket = null; }
+
+    if (this.workletNode) {
+      try { this.workletNode.disconnect(); this.workletNode.port.onmessage = null; } catch (e) {}
+      this.workletNode = null;
+    }
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try { this.audioContext.close(); } catch (e) {}
+      this.audioContext = null;
+    }
+    if (this.mediaStream) {
+      try { this.mediaStream.getTracks().forEach((track) => track.stop()); } catch (e) {}
+      this.mediaStream = null;
+    }
+    if (this.socket) {
+      try { if (this.socket.readyState === WebSocket.OPEN) { this.socket.close(); } } catch (e) {}
+      this.socket = null;
+    }
     console.log('[INGESTION] All resources released');
   }
 }
