@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THE WAR ROOM</title>
+  <link rel="stylesheet" href="/css/warRoom.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <div class="logo"><span class="logo-icon">⚔️</span> THE WAR ROOM</div>
+      <span id="status-indicator">STANDBY</span>
+    </div>
+    <div class="top-bar-center">
+      <span id="session-timer">00:00</span>
+    </div>
+    <div class="top-bar-right">
+      <button id="btn-start" class="btn btn-start">▶ START</button>
+      <button id="btn-stop" class="btn btn-stop" disabled>■ STOP</button>
+    </div>
+  </header>
+  <div class="main-container">
+    <div class="left-panel">
+      <div class="video-grid">
+        <div class="video-cell" data-speaker="JD">
+          <span class="speaker-badge" data-speaker="JD">JD</span>
+          <div class="video-placeholder">JD</div>
+          <video id="video-jd" autoplay muted playsinline></video>
+          <div class="waveform-indicator"><div class="waveform-bar" id="waveform-jd"></div></div>
+        </div>
+        <div class="video-cell" data-speaker="AK">
+          <span class="speaker-badge" data-speaker="AK">AK</span>
+          <div class="video-placeholder">AK</div>
+          <video id="video-ak" autoplay muted playsinline></video>
+          <div class="waveform-indicator"><div class="waveform-bar" id="waveform-ak"></div></div>
+        </div>
+        <div class="video-cell" data-speaker="MR">
+          <span class="speaker-badge" data-speaker="MR">MR</span>
+          <div class="video-placeholder">MR</div>
+          <video id="video-mr" autoplay muted playsinline></video>
+          <div class="waveform-indicator"><div class="waveform-bar" id="waveform-mr"></div></div>
+        </div>
+        <div class="video-cell" data-speaker="SW">
+          <span class="speaker-badge" data-speaker="SW">SW</span>
+          <div class="video-placeholder">SW</div>
+          <video id="video-sw" autoplay muted playsinline></video>
+          <div class="waveform-indicator"><div class="waveform-bar" id="waveform-sw"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="panel-section" style="flex: 2;">
+        <div class="panel-header"><span class="panel-header-icon">📝</span> LIVE TRANSCRIPT</div>
+        <div class="panel-body" id="live-transcript"><div class="panel-empty">Waiting for audio...</div></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-header"><span class="panel-header-icon">⚡</span> DECISIONS</div>
+        <div class="panel-body" id="decisions-panel"><div class="panel-empty">No decisions yet...</div></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-header"><span class="panel-header-icon">✅</span> ACTION ITEMS</div>
+        <div class="panel-body" id="actions-panel"><div class="panel-empty">No action items yet...</div></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-header"><span class="panel-header-icon">📊</span> VIBE CHECK</div>
+        <div class="panel-body" id="vibe-check"><div class="panel-empty">Analyzing sentiment...</div></div>
+      </div>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/ingestion.js"></script>
+  <script src="/js/warRoomUI.js"></script>
+</body>
+</html>
